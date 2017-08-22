@@ -1,0 +1,78 @@
+<job id="Configure-CreateADStructure">
+<script language="VBScript" src="..\..\scripts\ZTIUtility.vbs"/>
+<script language="VBScript"> 
+
+'//----------------------------------------------------------------------------
+'// Solution: Hydration
+'// Purpose: Used to create AD Structure
+'// Usage: Configure-CreateADStructure.wsf [/debug:true]
+'// Version: 1.1 - August 8, 2012 - Johan Arwidmark
+'//
+'// This script is provided "AS IS" with no warranties, confers no rights and 
+'// is not supported by the authors or Deployment Artist. 
+'//
+'//----------------------------------------------------------------------------
+
+
+'//----------------------------------------------------------------------------
+'// Global constant and variable declarations
+'//---------------------------------------------------------------------------- 
+
+Dim iRetVal 
+
+'//----------------------------------------------------------------------------
+'// Main routine
+'//---------------------------------------------------------------------------- 
+
+'On Error Resume Next
+iRetVal = ZTIProcess
+ProcessResults iRetVal
+On Error Goto 0 
+
+Function ZTIProcess() 
+
+	iRetVal = Success 
+	ZTIProcess = iRetval 
+	
+	oLogging.CreateEntry "Creating Hydration OUs", LogTypeInfo	
+	
+	Set oRootDSE = GetObject("LDAP://rootDSE")
+	sADsPath = "LDAP://" & oRootDSE.Get("defaultNamingContext")
+	Set oDomain = GetObject(sADsPath)
+
+	Set oOU = oDomain.Create("organizationalUnit", "ou=Workstations")
+	oOU.SetInfo
+
+	Set oOU = oDomain.Create("organizationalUnit", "ou=User Accounts")
+	oOU.SetInfo
+
+	' Create Users in the User Accounts OU
+	' Note: the 66048 userAccountControl value is password never expires
+    oLogging.CreateEntry "Create Users in the Service Accounts OU", LogTypeInfo	
+	
+	sOUPath = "LDAP://ou=User Accounts," & oRootDSE.Get("defaultNamingContext")
+
+	Set oOU = GetObject(sOUPath)
+	Set oUser = oOU.Create("User", "cn=Don")
+	oUser.Put "SAMAccountName", "Don"
+    oUser.SetInfo
+
+	oUser.SetPassword "Pa$$w0rd"
+	oUser.Put "userAccountControl", 66048
+	oUser.SetInfo
+
+	Set oOU = GetObject(sOUPath)
+	Set oUser = oOU.Create("User", "cn=John")
+	oUser.Put "SAMAccountName", "John"
+    oUser.SetInfo
+
+	oUser.SetPassword "Pa$$w0rd"
+	oUser.Put "userAccountControl", 66048
+	oUser.SetInfo
+	
+End Function
+  
+
+</script>
+</job>
+
